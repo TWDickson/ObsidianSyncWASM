@@ -1,85 +1,76 @@
-import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
+import { App, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
+import init, { greet, compute_hash } from './wasm/pkg/obsidian_sync_wasm.js';
 
-// Remember to rename these classes and interfaces!
-
-interface MyPluginSettings {
-	mySetting: string;
+interface ObsidianSyncWASMSettings {
+	testSetting: string;
 }
 
-const DEFAULT_SETTINGS: MyPluginSettings = {
-	mySetting: 'default'
+const DEFAULT_SETTINGS: ObsidianSyncWASMSettings = {
+	testSetting: 'default'
 }
 
-export default class MyPlugin extends Plugin {
-	settings: MyPluginSettings;
+export default class ObsidianSyncWASMPlugin extends Plugin {
+	settings: ObsidianSyncWASMSettings;
+	wasmInitialized: boolean = false;
 
 	async onload() {
 		await this.loadSettings();
 
-		// This creates an icon in the left ribbon.
-		const ribbonIconEl = this.addRibbonIcon('dice', 'Sample Plugin', (_evt: MouseEvent) => {
-			// Called when the user clicks the icon.
-			new Notice('This is a notice!');
-		});
-		// Perform additional things with the ribbon
-		ribbonIconEl.addClass('my-plugin-ribbon-class');
+		// Initialize WASM module
+		try {
+			// Get the base path for this plugin
+			const adapter = this.app.vault.adapter;
+			// @ts-ignore - basePath exists on FileSystemAdapter
+			const basePath = adapter.basePath || '';
+			const pluginDir = `${basePath}/.obsidian/plugins/${this.manifest.id}`;
+			const wasmPath = `${pluginDir}/obsidian_sync_wasm_bg.wasm`;
 
-		// This adds a status bar item to the bottom of the app. Does not work on mobile apps.
-		const statusBarItemEl = this.addStatusBarItem();
-		statusBarItemEl.setText('Status Bar Text');
+			// Load WASM file and initialize
+			await init(fetch(wasmPath));
+			this.wasmInitialized = true;
+			console.log('WASM module initialized successfully');
+		} catch (error) {
+			console.error('Failed to initialize WASM module:', error);
+			new Notice('Failed to initialize Obsidian Sync WASM plugin');
+			return;
+		}
 
-		// This adds a simple command that can be triggered anywhere
+		// Test command to verify WASM is working
 		this.addCommand({
-			id: 'open-sample-modal-simple',
-			name: 'Open sample modal (simple)',
+			id: 'test-wasm-greet',
+			name: 'Test WASM: Greet',
 			callback: () => {
-				new SampleModal(this.app).open();
-			}
-		});
-		// This adds an editor command that can perform some operation on the current editor instance
-		this.addCommand({
-			id: 'sample-editor-command',
-			name: 'Sample editor command',
-			editorCallback: (editor: Editor, _view: MarkdownView) => {
-				console.log(editor.getSelection());
-				editor.replaceSelection('Sample Editor Command');
-			}
-		});
-		// This adds a complex command that can check whether the current state of the app allows execution of the command
-		this.addCommand({
-			id: 'open-sample-modal-complex',
-			name: 'Open sample modal (complex)',
-			checkCallback: (checking: boolean) => {
-				// Conditions to check
-				const markdownView = this.app.workspace.getActiveViewOfType(MarkdownView);
-				if (markdownView) {
-					// If checking is true, we're simply "checking" if the command can be run.
-					// If checking is false, then we want to actually perform the operation.
-					if (!checking) {
-						new SampleModal(this.app).open();
-					}
-
-					// This command will only show up in Command Palette when the check function returns true
-					return true;
+				if (!this.wasmInitialized) {
+					new Notice('WASM module not initialized');
+					return;
 				}
+				const message = greet('Obsidian User');
+				new Notice(message);
 			}
 		});
 
-		// This adds a settings tab so the user can configure various aspects of the plugin
-		this.addSettingTab(new SampleSettingTab(this.app, this));
-
-		// If the plugin hooks up any global DOM events (on parts of the app that doesn't belong to this plugin)
-		// Using this function will automatically remove the event listener when this plugin is disabled.
-		this.registerDomEvent(document, 'click', (evt: MouseEvent) => {
-			console.log('click', evt);
+		// Test command to demonstrate WASM performance
+		this.addCommand({
+			id: 'test-wasm-hash',
+			name: 'Test WASM: Compute Hash',
+			callback: () => {
+				if (!this.wasmInitialized) {
+					new Notice('WASM module not initialized');
+					return;
+				}
+				const testString = 'This is a test string for hashing';
+				const hash = compute_hash(testString);
+				new Notice(`Hash: ${hash}`);
+				console.log(`Hash of "${testString}": ${hash}`);
+			}
 		});
 
-		// When registering intervals, this function will automatically clear the interval when the plugin is disabled.
-		this.registerInterval(window.setInterval(() => console.log('setInterval'), 5 * 60 * 1000));
+		// Add settings tab
+		this.addSettingTab(new ObsidianSyncWASMSettingTab(this.app, this));
 	}
 
 	onunload() {
-
+		console.log('Unloading Obsidian Sync WASM plugin');
 	}
 
 	async loadSettings() {
@@ -91,43 +82,29 @@ export default class MyPlugin extends Plugin {
 	}
 }
 
-class SampleModal extends Modal {
-	constructor(app: App) {
-		super(app);
-	}
+class ObsidianSyncWASMSettingTab extends PluginSettingTab {
+	plugin: ObsidianSyncWASMPlugin;
 
-	onOpen() {
-		const {contentEl} = this;
-		contentEl.setText('Woah!');
-	}
-
-	onClose() {
-		const {contentEl} = this;
-		contentEl.empty();
-	}
-}
-
-class SampleSettingTab extends PluginSettingTab {
-	plugin: MyPlugin;
-
-	constructor(app: App, plugin: MyPlugin) {
+	constructor(app: App, plugin: ObsidianSyncWASMPlugin) {
 		super(app, plugin);
 		this.plugin = plugin;
 	}
 
 	display(): void {
-		const {containerEl} = this;
+		const { containerEl } = this;
 
 		containerEl.empty();
 
+		containerEl.createEl('h2', { text: 'Obsidian Sync WASM Settings' });
+
 		new Setting(containerEl)
-			.setName('Setting #1')
-			.setDesc('It\'s a secret')
+			.setName('Test Setting')
+			.setDesc('A test setting for the plugin')
 			.addText(text => text
-				.setPlaceholder('Enter your secret')
-				.setValue(this.plugin.settings.mySetting)
+				.setPlaceholder('Enter a value')
+				.setValue(this.plugin.settings.testSetting)
 				.onChange(async (value) => {
-					this.plugin.settings.mySetting = value;
+					this.plugin.settings.testSetting = value;
 					await this.plugin.saveSettings();
 				}));
 	}
