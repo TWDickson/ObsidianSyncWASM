@@ -44,10 +44,46 @@ npm version patch|minor|major
 - If commit signing fails, DO NOT proceed - inform the user to configure GPG signing
 
 ### Commit Message Requirements
-- Keep commit messages clear and descriptive
+
+**IMPORTANT: Use Conventional Commits with Emojis**
+
+Format: `type(scope): emoji message`
+
+**Example:**
+```
+feat(WASM): ✨ add Rust WASM integration
+chore(Config): ⚙️ update workspace settings
+build(Build): 📦 add development dependencies
+perf(TypeScript): ⚡ upgrade to ES2021 target
+```
+
+**Available Scopes:**
+- `LLM Integration` - Claude Code, AI-related changes
+- `Utility` - Helper scripts, tools
+- `Config` - Configuration files
+- `WASM` - Rust/WebAssembly code
+- `Build` - Build system, bundling
+- `Dev` - Development workflow, tooling
+- `TypeScript` - TypeScript code changes
+
+**Common Types & Emojis:**
+- `feat`: ✨ New feature
+- `fix`: 🐛 Bug fix
+- `docs`: 📝 Documentation
+- `style`: 💄 Code style/formatting
+- `refactor`: ♻️ Code refactoring
+- `perf`: ⚡ Performance improvement
+- `test`: ✅ Tests
+- `build`: 📦 Build system
+- `ci`: 👷 CI/CD
+- `chore`: 🔧 Maintenance
+
+**Commit Guidelines:**
+- Keep messages clear and descriptive
 - Focus on the "why" rather than just the "what"
-- Follow the repository's existing commit message style (check `git log`)
-- Always include the standard Claude Code attribution footer when creating commits
+- Use present tense ("add feature" not "added feature")
+- First line should be ≤72 characters
+- Add detailed description in body if needed
 
 ### Security Considerations
 - Never commit sensitive information (API keys, tokens, credentials)
@@ -166,9 +202,11 @@ Follow Obsidian's Developer Policies strictly:
 ## TypeScript Configuration
 
 - Compiler: TypeScript 4.7.4
-- Target: ES6 (but esbuild bundles to es2018)
+- Target: ES2021 (verified compatible with Obsidian mobile and desktop)
+- Build target: ES2021 (esbuild)
 - Strict mode enabled: `noImplicitAny: true`, `strictNullChecks: true`
 - Source maps: Inline in dev mode, disabled in production
+- See `scripts/detect-es-support.js` to verify ES support in Obsidian
 
 ## External Dependencies
 
@@ -184,10 +222,52 @@ Follow Obsidian's Developer Policies strictly:
 - Bundle everything except the externalized packages above
 - Verify all dependencies are trustworthy before adding
 
-## References
+## Obsidian API Documentation
 
-- Obsidian sample plugin: https://github.com/obsidianmd/obsidian-sample-plugin
-- API docs: https://docs.obsidian.md
-- Developer policies: https://docs.obsidian.md/Developer+policies
-- Plugin guidelines: https://docs.obsidian.md/Plugins/Releasing/Plugin+guidelines
+**When working on this plugin, these documentation pages are frequently useful. Use WebFetch to access them as needed.**
+
+### Core Concepts
+- **Plugin API Overview**: https://docs.obsidian.md/Plugins/Getting+started/Build+a+plugin
+- **Plugin Guidelines**: https://docs.obsidian.md/Plugins/Releasing/Plugin+guidelines
+- **Developer Policies**: https://docs.obsidian.md/Developer+policies
+- **Submit Your Plugin**: https://docs.obsidian.md/Plugins/Releasing/Submit+your+plugin
+
+### API Reference
+- **TypeScript API**: https://docs.obsidian.md/Reference/TypeScript+API
+- **Vault API**: https://docs.obsidian.md/Reference/TypeScript+API/Vault
+- **Workspace API**: https://docs.obsidian.md/Reference/TypeScript+API/Workspace
+- **MetadataCache API**: https://docs.obsidian.md/Reference/TypeScript+API/MetadataCache
+- **Editor API**: https://docs.obsidian.md/Reference/TypeScript+API/Editor
+- **Notice API**: https://docs.obsidian.md/Reference/TypeScript+API/Notice
+
+### Mobile Development
+- **Mobile Development Guide**: https://docs.obsidian.md/Plugins/Getting+started/Mobile+development
+- **Capacitor Documentation**: https://capacitorjs.com/docs
+- **Platform Detection**: https://docs.obsidian.md/Reference/TypeScript+API/Platform
+
+### User Interface
+- **Custom Views**: https://docs.obsidian.md/Plugins/User+interface/Views
+- **Modals**: https://docs.obsidian.md/Plugins/User+interface/Modals
+- **Settings Tab**: https://docs.obsidian.md/Plugins/User+interface/Settings
+- **Icons**: https://docs.obsidian.md/Plugins/User+interface/Icons
+
+### Advanced Topics
+- **Events**: https://docs.obsidian.md/Plugins/Advanced+topics/Events
+- **Commands**: https://docs.obsidian.md/Plugins/User+interface/Commands
+- **Ribbon Actions**: https://docs.obsidian.md/Plugins/User+interface/Ribbon+actions
+- **Status Bar**: https://docs.obsidian.md/Plugins/User+interface/Status+bar
+
+### Testing & Releasing
+- **Hot Reload Plugin**: https://github.com/pjeby/hot-reload (for development)
+- **Plugin Review Process**: https://docs.obsidian.md/Plugins/Releasing/Plugin+review+guidelines
+- **Beta Testing**: https://docs.obsidian.md/Plugins/Releasing/Beta+testing
+
+### Community Resources
+- **Sample Plugin**: https://github.com/obsidianmd/obsidian-sample-plugin
+- **Obsidian API on GitHub**: https://github.com/obsidianmd/obsidian-api
+- **Developer Discord**: https://discord.gg/obsidianmd (check #plugin-dev channel)
+
+## Additional References
+
 - See `AGENTS.md` for comprehensive coding conventions, UX guidelines, and detailed examples
+- See `scripts/detect-es-support.js` for runtime ES feature detection
