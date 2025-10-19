@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [master]
+  push:
+    branches: [master]
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: wasm
+
+      - name: Install wasm-pack
+        run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Run Rust tests
+        run: cd wasm && cargo test --target wasm32-unknown-unknown
+
+      - name: TypeScript type check
+        run: npm run build
+
+      - name: Verify build artifacts
+        run: |
+          if [ ! -f main.js ]; then
+            echo "Error: main.js not found"
+            exit 1
+          fi
+          if [ ! -f obsidian_sync_wasm_bg.wasm ]; then
+            echo "Error: WASM file not found"
+            exit 1
+          fi
+          echo "✓ All build artifacts present"
+
+      - name: Check bundle size
+        run: |
+          echo "Build artifact sizes:"
+          ls -lh main.js obsidian_sync_wasm_bg.wasm

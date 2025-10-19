@@ -92,6 +92,72 @@ perf(TypeScript): ⚡ upgrade to ES2021 target
 - Review all code changes carefully before committing
 - Never run destructive git commands (`push --force` to main, hard reset, etc.) without explicit user approval
 
+## Continuous Integration & Branch Protection
+
+### GitHub Actions CI
+
+The repository includes a CI workflow (`.github/workflows/ci.yml`) that runs on:
+- Pull requests targeting `master`
+- Pushes to `master`
+
+**CI Checks:**
+1. **TypeScript type checking** - Ensures no type errors
+2. **Rust tests** - Runs all WASM tests with `cargo test`
+3. **Production build** - Verifies the full build completes successfully
+4. **Build artifact verification** - Confirms `main.js` and WASM files are generated
+5. **Bundle size reporting** - Displays artifact sizes for monitoring bloat
+
+**CI Workflow Features:**
+- Caches npm and Rust dependencies for faster runs
+- Uses `wasm32-unknown-unknown` target for WASM compilation
+- Runs `npm ci` for reproducible builds
+- Reports build artifacts and sizes
+
+### Branch Protection Setup
+
+**To require PRs for the master branch:**
+
+1. **Enable Branch Protection**:
+   - Go to: `Settings` → `Branches` → `Add branch protection rule`
+   - Branch name pattern: `master`
+
+2. **Recommended Rules**:
+   - ✅ Require a pull request before merging
+     - Required approvals: 1 (for team projects) or 0 (for solo with CI)
+     - Dismiss stale reviews when new commits are pushed
+   - ✅ Require status checks to pass before merging
+     - Add required check: `ci` (the CI workflow job name)
+     - Require branches to be up to date before merging
+   - ✅ Require signed commits (matches repository security requirements)
+   - ✅ Include administrators (apply rules to repo admins too)
+   - ⚠️ Do not allow force pushes
+   - ⚠️ Do not allow deletions
+
+3. **Workflow**:
+   ```bash
+   # Create feature branch
+   git checkout -b feature/my-feature
+
+   # Make changes and commit
+   git add .
+   git commit -m "feat(Feature): ✨ add new feature"
+
+   # Push to remote
+   git push -u origin feature/my-feature
+
+   # Create PR via GitHub UI or gh CLI
+   gh pr create --title "feat(Feature): ✨ add new feature" --body "Description..."
+
+   # After CI passes and review (if required), merge via GitHub UI
+   ```
+
+4. **Local Development**:
+   - Continue using `npm run dev` for local testing
+   - CI will catch issues before merge
+   - All commits must be signed (enforced by branch protection)
+
+**Note**: Branch protection requires a GitHub Pro account for private repositories, but is free for public repositories.
+
 ## Code Organization
 
 **Current state**: All code is in `main.ts` (single file).
