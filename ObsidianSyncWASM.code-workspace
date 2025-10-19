@@ -1,0 +1,49 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		// Rust settings
+		"rust-analyzer.cargo.target": "wasm32-unknown-unknown",
+		"rust-analyzer.check.allTargets": false,
+		"rust-analyzer.diagnostics.disabled": ["unresolved-proc-macro"],
+		"rust-analyzer.cargo.features": "all",
+
+		// TypeScript settings
+		"typescript.tsdk": "node_modules/typescript/lib",
+		"typescript.enablePromptUseWorkspaceTsdk": true,
+
+		// Editor settings
+		"editor.formatOnSave": true,
+		"[rust]": {
+			"editor.defaultFormatter": "rust-lang.rust-analyzer",
+			"editor.formatOnSave": true
+		},
+		"[typescript]": {
+			"editor.defaultFormatter": "vscode.typescript-language-features"
+		},
+
+		// File associations
+		"files.associations": {
+			"*.rs": "rust"
+		},
+
+		// Exclude build artifacts from search
+		"search.exclude": {
+			"**/node_modules": true,
+			"**/target": true,
+			"**/wasm": true
+		},
+		"conventionalCommits.scopes": ["LLM Integration", "Utility", "Config", "WASM", "Build", "Dev", "TypeScript"]
+	},
+	"extensions": {
+		"recommendations": [
+			"rust-lang.rust-analyzer",
+			"vadimcn.vscode-lldb",
+			"tamasfe.even-better-toml",
+			"fill-labs.dependi"
+		]
+	}
+}
