@@ -1,0 +1,6 @@
+{
+    "watch": ["main.ts", "wasm/pkg"],
+    "ext": "ts, js",
+    "ignore": ["*.test.ts"],
+    "exec": "node esbuild.config.mjs"
+}
