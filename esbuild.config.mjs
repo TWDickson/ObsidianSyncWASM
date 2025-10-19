@@ -1,6 +1,8 @@
 import esbuild from "esbuild";
 import process from "process";
 import builtins from "builtin-modules";
+import fs from "fs";
+import path from "path";
 
 const banner =
 `/*
@@ -10,6 +12,25 @@ if you want to view the source, please visit the github repository of this plugi
 `;
 
 const prod = (process.argv[2] === "production");
+
+// Plugin to copy WASM files
+const wasmCopyPlugin = {
+	name: 'wasm-copy',
+	setup(build) {
+		build.onEnd(() => {
+			// Copy WASM file to the root directory
+			const wasmSource = path.join('wasm', 'pkg', 'obsidian_sync_wasm_bg.wasm');
+			const wasmDest = 'obsidian_sync_wasm_bg.wasm';
+
+			if (fs.existsSync(wasmSource)) {
+				fs.copyFileSync(wasmSource, wasmDest);
+				console.log('✓ Copied WASM file to root');
+			} else {
+				console.warn('⚠ WASM file not found. Run wasm-pack build first.');
+			}
+		});
+	},
+};
 
 const context = await esbuild.context({
 	banner: {
@@ -33,12 +54,21 @@ const context = await esbuild.context({
 		"@lezer/lr",
 		...builtins],
 	format: "cjs",
-	target: "es2018",
+	target: "es2021", // Obsidian supports ES2021 (tested with detect-es-support.js)
 	logLevel: "info",
 	sourcemap: prod ? false : "inline",
 	treeShaking: true,
 	outfile: "main.js",
 	minify: prod,
+	plugins: [wasmCopyPlugin],
+	// Suppress import.meta warning - we pass WASM file explicitly so import.meta.url is never used
+	logOverride: {
+		'empty-import-meta': 'silent'
+	},
+	// Allow .wasm files to be loaded
+	loader: {
+		'.wasm': 'file'
+	},
 });
 
 if (prod) {
