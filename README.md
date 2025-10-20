@@ -92,3 +92,5 @@ If you have multiple URLs, you can also do:
 ## API Documentation
 
 See https://github.com/obsidianmd/obsidian-api
+
+<!-- Tested ruleset and auto-merge on 2025-10-19 -->
