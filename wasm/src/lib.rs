@@ -1,6 +1,8 @@
 use wasm_bindgen::prelude::*;
 
 // This is called when the wasm module is instantiated
+// Skip during tests to avoid entry point conflicts with test harness
+#[cfg(not(test))]
 #[wasm_bindgen(start)]
 pub fn main() -> Result<(), JsValue> {
     // Set panic hook for better error messages in the browser console (dev only)
@@ -31,13 +33,14 @@ pub fn compute_hash(input: &str) -> u64 {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use wasm_bindgen_test::*;
 
-    #[test]
+    #[wasm_bindgen_test]
     fn test_greet() {
-        assert_eq!(greet("World"), "Hello, World from Rust + WASM!");
+        assert_eq!(greet("World"), "Hello, World from Rust + WASM! (Auto-rebuilt!)");
     }
 
-    #[test]
+    #[wasm_bindgen_test]
     fn test_compute_hash() {
         let hash1 = compute_hash("test");
         let hash2 = compute_hash("test");
