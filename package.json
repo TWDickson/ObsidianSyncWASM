@@ -25,7 +25,7 @@
 		"@typescript-eslint/parser": "5.29.0",
 		"builtin-modules": "3.3.0",
 		"concurrently": "^9.2.1",
-		"esbuild": "0.17.3",
+		"esbuild": "0.25.0",
 		"nodemon": "^3.1.10",
 		"obsidian": "latest",
 		"tslib": "2.4.0",
