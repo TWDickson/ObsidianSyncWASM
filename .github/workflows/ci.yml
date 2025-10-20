@@ -36,8 +36,8 @@ jobs:
       - name: Install Node dependencies
         run: npm ci
 
-      - name: Run Rust tests
-        run: cd wasm && cargo test --target wasm32-unknown-unknown
+      - name: Run Rust/WASM tests
+        run: cd wasm && wasm-pack test --node
 
       - name: TypeScript type check
         run: npm run build
