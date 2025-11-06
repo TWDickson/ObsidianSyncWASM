@@ -39,8 +39,11 @@ jobs:
       - name: Install Node dependencies
         run: npm ci
 
-      - name: Run Rust/WASM tests
-        run: cd wasm && wasm-pack test --node
+      - name: Run TypeScript unit tests
+        run: npm test
+
+      - name: Run Rust unit tests
+        run: npm run test:rust
 
       - name: TypeScript type check
         run: npm run build
