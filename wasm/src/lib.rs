@@ -33,14 +33,13 @@ pub fn compute_hash(input: &str) -> u64 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use wasm_bindgen_test::*;
 
-    #[wasm_bindgen_test]
+    #[test]
     fn test_greet() {
         assert_eq!(greet("World"), "Hello, World from Rust + WASM! (Auto-rebuilt!)");
     }
 
-    #[wasm_bindgen_test]
+    #[test]
     fn test_compute_hash() {
         let hash1 = compute_hash("test");
         let hash2 = compute_hash("test");
@@ -48,5 +47,40 @@ mod tests {
 
         assert_eq!(hash1, hash2);
         assert_ne!(hash1, hash3);
+    }
+
+    #[test]
+    fn test_compute_hash_deterministic() {
+        // Hash should be deterministic
+        let input = "deterministic test";
+        let hash1 = compute_hash(input);
+        let hash2 = compute_hash(input);
+        assert_eq!(hash1, hash2);
+    }
+
+    #[test]
+    fn test_greet_empty_name() {
+        let result = greet("");
+        assert!(result.contains("Hello"));
+    }
+}
+
+// WASM-specific tests that run in the browser
+#[cfg(all(test, target_arch = "wasm32"))]
+mod wasm_tests {
+    use super::*;
+    use wasm_bindgen_test::*;
+
+    wasm_bindgen_test_configure!(run_in_browser);
+
+    #[wasm_bindgen_test]
+    fn test_greet_wasm() {
+        assert_eq!(greet("WASM"), "Hello, WASM from Rust + WASM! (Auto-rebuilt!)");
+    }
+
+    #[wasm_bindgen_test]
+    fn test_compute_hash_wasm() {
+        let hash = compute_hash("wasm test");
+        assert!(hash > 0);
     }
 }
