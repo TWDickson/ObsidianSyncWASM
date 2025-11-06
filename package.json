@@ -9,6 +9,16 @@
 		"dev:ts": "nodemon --config ./nodemon-configs/nodemon-dev-ts.json",
 		"dev": "npm run wasm && concurrently -n wasm,ts -c cyan,green \"npm run dev:wasm\" \"npm run dev:ts\"",
 		"build": "npm run wasm && tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
+		"test": "vitest run",
+		"test:watch": "vitest",
+		"test:ui": "vitest --ui",
+		"test:coverage": "vitest run --coverage",
+		"test:rust": "cd ./wasm && cargo test",
+		"test:all": "npm run test && npm run test:rust",
+		"setup:test-vaults": "bash scripts/setup-test-vaults.sh",
+		"install:test-vaults": "node scripts/install-to-test-vaults.mjs",
+		"build:install": "npm run build && npm run install:test-vaults",
+		"symlink:plugin": "node scripts/symlink-plugin.mjs",
 		"version": "node version-bump.mjs && git add manifest.json versions.json"
 	},
 	"keywords": [
@@ -20,15 +30,19 @@
 	"author": "Taylor Dickson",
 	"license": "MIT",
 	"devDependencies": {
-		"@types/node": "^24.10.0",
-		"@typescript-eslint/eslint-plugin": "^8.46.2",
+	"@types/jest": "^30.0.0",
+	"@types/node": "^24.10.0",
+	"@typescript-eslint/eslint-plugin": "^8.46.2",
 		"@typescript-eslint/parser": "^8.46.1",
+		"@vitest/ui": "^4.0.7",
 		"builtin-modules": "5.0.0",
 		"concurrently": "^9.2.1",
-		"esbuild": "0.25.12",
+	"esbuild": "0.25.12",
+	"happy-dom": "^20.0.10",
 		"nodemon": "^3.1.10",
 		"obsidian": "latest",
 		"tslib": "2.8.1",
-		"typescript": "5.9.3"
+		"typescript": "5.9.3",
+		"vitest": "^4.0.7"
 	}
 }
