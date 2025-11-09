@@ -24,3 +24,25 @@ data.json
 # WASM build artifacts (copied to root during build)
 *.wasm
 *.wasm.d.ts
+
+# Test coverage reports
+coverage/
+.nyc_output/
+
+# Test vaults (integration testing)
+# Exclude vault contents but preserve structure
+test-vaults/*
+!test-vaults/.gitkeep
+!test-vaults/README.md
+!test-vaults/fixtures/
+!test-vaults/vault-a/
+test-vaults/vault-a/*
+!test-vaults/vault-a/.obsidian/
+test-vaults/vault-a/.obsidian/*
+!test-vaults/vault-a/.obsidian/*.json
+!test-vaults/vault-a/HOT-RELOAD-SETUP.md
+# Exclude plugin directories (symlinked)
+test-vaults/vault-a/.obsidian/plugins/
+
+# Vault path cache (for development)
+.vault-path

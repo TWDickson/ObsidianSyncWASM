@@ -34,16 +34,145 @@
 		"search.exclude": {
 			"**/node_modules": true,
 			"**/target": true,
-			"**/wasm": true
+			"**/wasm": true,
+			"**/coverage": true
 		},
-		"conventionalCommits.scopes": ["LLM Integration", "Utility", "Config", "WASM", "Build", "Dev", "TypeScript"]
+
+		// Testing settings
+		"vitest.enable": true,
+		"vitest.commandLine": "npm run test:watch",
+		"vitest.exclude": ["**/node_modules/**", "**/wasm/**", "**/dist/**"],
+
+		// Files to exclude from file explorer
+		"files.exclude": {
+			"**/coverage": true
+		},
+
+		"conventionalCommits.scopes": ["LLM Integration", "Utility", "Config", "WASM", "Build", "Dev", "TypeScript", "Testing"]
 	},
 	"extensions": {
 		"recommendations": [
 			"rust-lang.rust-analyzer",
 			"vadimcn.vscode-lldb",
 			"tamasfe.even-better-toml",
-			"fill-labs.dependi"
+			"fill-labs.dependi",
+			"vitest.explorer"
+		]
+	},
+	"tasks": {
+		"version": "2.0.0",
+		"tasks": [
+			{
+				"label": "Test: Run All Tests",
+				"type": "shell",
+				"command": "npm run test:all",
+				"group": {
+					"kind": "test",
+					"isDefault": true
+				},
+				"presentation": {
+					"reveal": "always",
+					"panel": "new"
+				},
+				"problemMatcher": []
+			},
+			{
+				"label": "Test: TypeScript (Watch)",
+				"type": "shell",
+				"command": "npm run test:watch",
+				"group": "test",
+				"isBackground": true,
+				"presentation": {
+					"reveal": "always",
+					"panel": "dedicated"
+				},
+				"problemMatcher": {
+					"pattern": [
+						{
+							"regexp": ".",
+							"file": 1,
+							"location": 2,
+							"message": 3
+						}
+					],
+					"background": {
+						"activeOnStart": true,
+						"beginsPattern": ".*",
+						"endsPattern": ".*"
+					}
+				}
+			},
+			{
+				"label": "Test: TypeScript (Run Once)",
+				"type": "shell",
+				"command": "npm test",
+				"group": "test",
+				"presentation": {
+					"reveal": "always",
+					"panel": "shared"
+				},
+				"problemMatcher": []
+			},
+			{
+				"label": "Test: TypeScript (UI)",
+				"type": "shell",
+				"command": "npm run test:ui",
+				"group": "test",
+				"isBackground": true,
+				"presentation": {
+					"reveal": "always",
+					"panel": "dedicated"
+				},
+				"problemMatcher": []
+			},
+			{
+				"label": "Test: TypeScript Coverage",
+				"type": "shell",
+				"command": "npm run test:coverage && open coverage/index.html",
+				"group": "test",
+				"presentation": {
+					"reveal": "always",
+					"panel": "new"
+				},
+				"problemMatcher": []
+			},
+			{
+				"label": "Test: Rust",
+				"type": "shell",
+				"command": "npm run test:rust",
+				"group": "test",
+				"presentation": {
+					"reveal": "always",
+					"panel": "shared"
+				},
+				"problemMatcher": []
+			},
+			{
+				"label": "Build: Development",
+				"type": "shell",
+				"command": "npm run dev",
+				"group": "build",
+				"isBackground": true,
+				"presentation": {
+					"reveal": "always",
+					"panel": "dedicated"
+				},
+				"problemMatcher": []
+			},
+			{
+				"label": "Build: Production",
+				"type": "shell",
+				"command": "npm run build",
+				"group": {
+					"kind": "build",
+					"isDefault": true
+				},
+				"presentation": {
+					"reveal": "always",
+					"panel": "shared"
+				},
+				"problemMatcher": ["$tsc"]
+			}
 		]
 	}
 }
