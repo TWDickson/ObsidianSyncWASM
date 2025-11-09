@@ -3,10 +3,14 @@ import init, { greet, compute_hash } from './wasm/pkg/obsidian_sync_wasm.js';
 
 interface ObsidianSyncWASMSettings {
 	testSetting: string;
+	wasmTestInput: string;
+	wasmTestResult: string;
 }
 
 const DEFAULT_SETTINGS: ObsidianSyncWASMSettings = {
-	testSetting: 'default'
+	testSetting: 'default',
+	wasmTestInput: 'Test WASM here!',
+	wasmTestResult: ''
 }
 
 export default class ObsidianSyncWASMPlugin extends Plugin {
@@ -18,17 +22,23 @@ export default class ObsidianSyncWASMPlugin extends Plugin {
 
 		// Initialize WASM module
 		try {
-			// Get the base path for this plugin
-			const adapter = this.app.vault.adapter;
-			// @ts-ignore - basePath exists on FileSystemAdapter
-			const basePath = adapter.basePath || '';
-			const pluginDir = `${basePath}/.obsidian/plugins/${this.manifest.id}`;
+			// Use manifest.dir to get the vault-relative path to the plugin directory
+			// This is provided by Obsidian and works correctly with symlinks
+			const pluginDir = this.manifest.dir;
+			if (!pluginDir) {
+				throw new Error('Plugin directory not found in manifest');
+			}
+
 			const wasmPath = `${pluginDir}/obsidian_sync_wasm_bg.wasm`;
 
-			// Load WASM file and initialize
-			await init(fetch(wasmPath));
+			// Read WASM file as ArrayBuffer using the vault adapter
+			// @ts-ignore - readBinary exists on FileSystemAdapter
+			const wasmBytes = await this.app.vault.adapter.readBinary(wasmPath);
+
+			// Initialize WASM with the binary data (using new API format)
+			await init({ module_or_path: wasmBytes });
 			this.wasmInitialized = true;
-			console.log('WASM module initialized successfully');
+			console.log('WASM module initialized successfully from:', wasmPath);
 		} catch (error) {
 			console.error('Failed to initialize WASM module:', error);
 			new Notice('Failed to initialize Obsidian Sync WASM plugin');
@@ -84,6 +94,7 @@ export default class ObsidianSyncWASMPlugin extends Plugin {
 
 class ObsidianSyncWASMSettingTab extends PluginSettingTab {
 	plugin: ObsidianSyncWASMPlugin;
+	private resultCodeEl: HTMLElement | null = null;
 
 	constructor(app: App, plugin: ObsidianSyncWASMPlugin) {
 		super(app, plugin);
@@ -107,5 +118,51 @@ class ObsidianSyncWASMSettingTab extends PluginSettingTab {
 					this.plugin.settings.testSetting = value;
 					await this.plugin.saveSettings();
 				}));
+
+		// WASM Testing Section
+		containerEl.createEl('h3', { text: 'WASM Integration Test' });
+
+		// Input field for WASM test
+		new Setting(containerEl)
+			.setName('Input Text')
+			.setDesc('Enter text to compute a hash using Rust WASM')
+			.addText(text => text
+				.setPlaceholder('Enter text to hash')
+				.setValue(this.plugin.settings.wasmTestInput)
+				.onChange(async (value) => {
+					this.plugin.settings.wasmTestInput = value;
+					await this.plugin.saveSettings();
+				}));
+
+		// Button to trigger WASM computation
+		new Setting(containerEl)
+			.setName('Compute Hash')
+			.setDesc('Click to compute hash using Rust WASM')
+			.addButton(button => button
+				.setButtonText('Compute')
+				.setCta()
+				.onClick(async () => {
+					if (!this.plugin.wasmInitialized) {
+						new Notice('WASM module not initialized');
+						return;
+					}
+					const input = this.plugin.settings.wasmTestInput;
+					const hash = compute_hash(input);
+					this.plugin.settings.wasmTestResult = typeof hash === 'string' ? hash : String(hash);
+					await this.plugin.saveSettings();
+
+					// Refresh the display to show the new result
+					this.display();
+
+					new Notice(`Hash computed: ${hash}`);
+				}));
+
+		// Display the result
+		const resultContainer = containerEl.createDiv('wasm-result-container');
+		resultContainer.createEl('strong', { text: 'Latest Hash Result: ' });
+		this.resultCodeEl = resultContainer.createEl('code', {
+			text: this.plugin.settings.wasmTestResult,
+			cls: 'wasm-hash-result'
+		});
 	}
 }

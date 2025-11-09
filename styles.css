@@ -6,3 +6,23 @@ available in the app when your plugin is enabled.
 If your plugin does not need CSS, delete this file.
 
 */
+
+/* WASM Testing Section */
+.wasm-result-container {
+	margin-top: 1em;
+	padding: 1em;
+	background-color: var(--background-secondary);
+	border-radius: 6px;
+	border: 1px solid var(--background-modifier-border);
+}
+
+.wasm-hash-result {
+	display: inline-block;
+	padding: 0.25em 0.5em;
+	margin-left: 0.5em;
+	background-color: var(--background-primary);
+	border-radius: 4px;
+	font-family: var(--font-monospace);
+	font-size: 0.95em;
+	color: var(--text-accent);
+}
