@@ -47,6 +47,8 @@ describe('ObsidianSyncWASMPlugin', () => {
 
 			expect(plugin.settings).toEqual({
 				testSetting: 'custom value',
+				wasmTestInput: 'Test WASM here!',
+				wasmTestResult: '',
 			});
 		});
 
@@ -58,6 +60,8 @@ describe('ObsidianSyncWASMPlugin', () => {
 
 			expect(plugin.settings).toEqual({
 				testSetting: 'default',
+				wasmTestInput: 'Test WASM here!',
+				wasmTestResult: '',
 			});
 		});
 
@@ -65,12 +69,16 @@ describe('ObsidianSyncWASMPlugin', () => {
 			plugin.saveData = vi.fn(async () => {});
 			plugin.settings = {
 				testSetting: 'new value',
+				wasmTestInput: 'Test input',
+				wasmTestResult: '12345',
 			};
 
 			await plugin.saveSettings();
 
 			expect(plugin.saveData).toHaveBeenCalledWith({
 				testSetting: 'new value',
+				wasmTestInput: 'Test input',
+				wasmTestResult: '12345',
 			});
 		});
 	});
