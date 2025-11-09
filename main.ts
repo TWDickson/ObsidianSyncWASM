@@ -3,10 +3,14 @@ import init, { greet, compute_hash } from './wasm/pkg/obsidian_sync_wasm.js';
 
 interface ObsidianSyncWASMSettings {
 	testSetting: string;
+	wasmTestInput: string;
+	wasmTestResult: string;
 }
 
 const DEFAULT_SETTINGS: ObsidianSyncWASMSettings = {
-	testSetting: 'default'
+	testSetting: 'default',
+	wasmTestInput: 'Test WASM here!',
+	wasmTestResult: ''
 }
 
 export default class ObsidianSyncWASMPlugin extends Plugin {
@@ -25,8 +29,12 @@ export default class ObsidianSyncWASMPlugin extends Plugin {
 			const pluginDir = `${basePath}/.obsidian/plugins/${this.manifest.id}`;
 			const wasmPath = `${pluginDir}/obsidian_sync_wasm_bg.wasm`;
 
-			// Load WASM file and initialize
-			await init(fetch(wasmPath));
+			// Read WASM file as ArrayBuffer using the adapter
+			// @ts-ignore - readBinary exists on FileSystemAdapter
+			const wasmBytes = await adapter.readBinary('.obsidian/plugins/' + this.manifest.id + '/obsidian_sync_wasm_bg.wasm');
+
+			// Initialize WASM with the binary data
+			await init(wasmBytes);
 			this.wasmInitialized = true;
 			console.log('WASM module initialized successfully');
 		} catch (error) {
@@ -107,5 +115,54 @@ class ObsidianSyncWASMSettingTab extends PluginSettingTab {
 					this.plugin.settings.testSetting = value;
 					await this.plugin.saveSettings();
 				}));
+
+		// WASM Testing Section
+		containerEl.createEl('h3', { text: 'WASM Integration Test' });
+
+		// Input field for WASM test
+		new Setting(containerEl)
+			.setName('Input Text')
+			.setDesc('Enter text to compute a hash using Rust WASM')
+			.addText(text => text
+				.setPlaceholder('Enter text to hash')
+				.setValue(this.plugin.settings.wasmTestInput)
+				.onChange(async (value) => {
+					this.plugin.settings.wasmTestInput = value;
+					await this.plugin.saveSettings();
+				}));
+
+		// Button to trigger WASM computation
+		new Setting(containerEl)
+			.setName('Compute Hash')
+			.setDesc('Click to compute hash using Rust WASM')
+			.addButton(button => button
+				.setButtonText('Compute')
+				.setCta()
+				.onClick(async () => {
+					if (!this.plugin.wasmInitialized) {
+						new Notice('WASM module not initialized');
+						return;
+					}
+
+					const input = this.plugin.settings.wasmTestInput;
+					const hash = compute_hash(input);
+					this.plugin.settings.wasmTestResult = hash.toString();
+					await this.plugin.saveSettings();
+
+					// Refresh the display to show the new result
+					this.display();
+
+					new Notice(`Hash computed: ${hash}`);
+				}));
+
+		// Display the result
+		if (this.plugin.settings.wasmTestResult) {
+			const resultContainer = containerEl.createDiv('wasm-result-container');
+			resultContainer.createEl('strong', { text: 'Latest Hash Result: ' });
+			resultContainer.createEl('code', {
+				text: this.plugin.settings.wasmTestResult,
+				cls: 'wasm-hash-result'
+			});
+		}
 	}
 }
