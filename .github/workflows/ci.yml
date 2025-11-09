@@ -1,66 +1,69 @@
 name: CI
 
 on:
-  pull_request:
-    branches: [master]
-  push:
-    branches: [master]
+    pull_request:
+        branches: [master]
+    push:
+        branches: [master]
 
 permissions:
-  contents: read
+    contents: read
 
 jobs:
-  ci:
-    runs-on: ubuntu-latest
+    ci:
+        runs-on: ubuntu-latest
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v5
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v5
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: '20'
-          cache: 'npm'
+            - name: Setup Node.js
+              uses: actions/setup-node@v6
+              with:
+                  node-version: "20"
+                  cache: "npm"
 
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: wasm32-unknown-unknown
+            - name: Setup Rust
+              uses: dtolnay/rust-toolchain@stable
+              with:
+                  targets: wasm32-unknown-unknown
 
-      - name: Cache Rust dependencies
-        uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: wasm
+            - name: Cache Rust dependencies
+              uses: Swatinem/rust-cache@v2
+              with:
+                  workspaces: wasm
 
-      - name: Install wasm-pack
-        run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+            - name: Install wasm-pack
+              run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 
-      - name: Install Node dependencies
-        run: npm ci
+            - name: Install Node dependencies
+              run: npm ci
 
-      - name: Run TypeScript unit tests
-        run: npm test
+            - name: Build WASM
+              run: npm run wasm
 
-      - name: Run Rust unit tests
-        run: npm run test:rust
+            - name: Run TypeScript unit tests
+              run: npm test
 
-      - name: TypeScript type check
-        run: npm run build
+            - name: Run Rust unit tests
+              run: npm run test:rust
 
-      - name: Verify build artifacts
-        run: |
-          if [ ! -f main.js ]; then
-            echo "Error: main.js not found"
-            exit 1
-          fi
-          if [ ! -f obsidian_sync_wasm_bg.wasm ]; then
-            echo "Error: WASM file not found"
-            exit 1
-          fi
-          echo "✓ All build artifacts present"
+            - name: TypeScript type check
+              run: npm run build
 
-      - name: Check bundle size
-        run: |
-          echo "Build artifact sizes:"
-          ls -lh main.js obsidian_sync_wasm_bg.wasm
+            - name: Verify build artifacts
+              run: |
+                  if [ ! -f main.js ]; then
+                    echo "Error: main.js not found"
+                    exit 1
+                  fi
+                  if [ ! -f obsidian_sync_wasm_bg.wasm ]; then
+                    echo "Error: WASM file not found"
+                    exit 1
+                  fi
+                  echo "✓ All build artifacts present"
+
+            - name: Check bundle size
+              run: |
+                  echo "Build artifact sizes:"
+                  ls -lh main.js obsidian_sync_wasm_bg.wasm
