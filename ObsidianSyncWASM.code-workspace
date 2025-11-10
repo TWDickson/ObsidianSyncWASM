@@ -2,6 +2,10 @@
 	"folders": [
 		{
 			"path": "."
+		},
+		{
+			"name": "Wiki",
+			"path": "wiki"
 		}
 	],
 	"settings": {
@@ -35,7 +39,8 @@
 			"**/node_modules": true,
 			"**/target": true,
 			"**/wasm": true,
-			"**/coverage": true
+			"**/coverage": true,
+			"**/test-vaults/*/.obsidian/plugins": true
 		},
 
 		// Testing settings
@@ -45,7 +50,16 @@
 
 		// Files to exclude from file explorer
 		"files.exclude": {
-			"**/coverage": true
+			"**/coverage": true,
+			"**/test-vaults/*/.obsidian/plugins": true
+		},
+
+		// Exclude symlinked directories from file watching to prevent duplication
+		"files.watcherExclude": {
+			"**/node_modules": true,
+			"**/target": true,
+			"**/coverage": true,
+			"**/test-vaults/*/.obsidian/plugins": true
 		},
 
 		"conventionalCommits.scopes": ["LLM Integration", "Utility", "Config", "WASM", "Build", "Dev", "TypeScript", "Testing"]

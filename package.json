@@ -37,7 +37,7 @@
 		"@vitest/ui": "^4.0.7",
 		"builtin-modules": "5.0.0",
 		"concurrently": "^9.2.1",
-		"esbuild": "0.25.12",
+		"esbuild": "0.27.0",
 		"happy-dom": "^20.0.10",
 		"nodemon": "^3.1.10",
 		"obsidian": "latest",
