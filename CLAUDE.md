@@ -29,6 +29,311 @@ npm run build
 npm version patch|minor|major
 ```
 
+## Test-Driven Development (TDD)
+
+**CRITICAL: Follow TDD practices for all new features and bug fixes.**
+
+This project uses a **test-first approach** to ensure code quality, maintainability, and regression prevention.
+
+### TDD Workflow
+
+Follow the **Red-Green-Refactor** cycle:
+
+1. **🔴 Red** - Write a failing test that defines the desired behavior
+2. **🟢 Green** - Write the minimal code to make the test pass
+3. **🔵 Refactor** - Improve the code while keeping tests green
+
+### Testing Commands
+
+```bash
+# Run all tests (TypeScript + Rust)
+npm test
+
+# Run TypeScript tests only
+npm run test:ts
+
+# Run Rust/WASM tests only
+npm run test:wasm
+
+# Run tests in watch mode (auto-rerun on changes)
+npm run test:watch
+
+# Run tests with coverage report
+npm run test:coverage
+
+# Run tests in UI mode (interactive)
+npm run test:ui
+```
+
+### When to Write Tests
+
+**ALWAYS write tests for:**
+- ✅ New features (write tests BEFORE implementation)
+- ✅ Bug fixes (write failing test that reproduces the bug, then fix)
+- ✅ Refactoring (ensure existing behavior is preserved)
+- ✅ Complex business logic
+- ✅ Data transformations and parsing
+- ✅ State management and side effects
+- ✅ WASM FFI bindings and Rust code
+- ✅ Utility functions and helpers
+
+**Tests are optional for:**
+- ⚠️ Simple UI components without logic
+- ⚠️ Trivial getters/setters
+- ⚠️ Obsidian plugin lifecycle boilerplate
+
+### Test Organization
+
+**TypeScript Tests** (Vitest):
+```
+tests/
+├── unit/           # Unit tests for individual functions/classes
+├── integration/    # Integration tests for module interactions
+└── fixtures/       # Test data and mocks
+```
+
+**Rust Tests** (cargo test):
+```
+wasm/src/
+├── lib.rs          # Main library code with unit tests
+└── tests/          # Integration tests
+```
+
+### Testing Best Practices
+
+**1. Test Structure (AAA Pattern)**
+```ts
+// Arrange - Set up test data and conditions
+const input = "test data";
+const expected = "expected result";
+
+// Act - Execute the code under test
+const result = functionUnderTest(input);
+
+// Assert - Verify the result
+expect(result).toBe(expected);
+```
+
+**2. Descriptive Test Names**
+```ts
+// ❌ Bad: vague test name
+test('it works', () => { ... });
+
+// ✅ Good: describes behavior and context
+test('parseMarkdown() should extract frontmatter from valid markdown', () => { ... });
+```
+
+**3. Test One Thing Per Test**
+```ts
+// ❌ Bad: testing multiple behaviors
+test('user management', () => {
+  expect(createUser()).toBeTruthy();
+  expect(deleteUser()).toBeTruthy();
+  expect(updateUser()).toBeTruthy();
+});
+
+// ✅ Good: focused single-behavior tests
+test('createUser() should create a new user with valid data', () => { ... });
+test('deleteUser() should remove user by ID', () => { ... });
+test('updateUser() should modify existing user', () => { ... });
+```
+
+**4. Keep Tests Fast**
+- Mock external dependencies (file system, network, Obsidian API)
+- Use in-memory data structures when possible
+- Run expensive tests separately (integration, E2E)
+
+**5. Test Edge Cases**
+```ts
+test('should handle empty string input', () => { ... });
+test('should handle null/undefined values', () => { ... });
+test('should handle large inputs (10MB+)', () => { ... });
+test('should handle special characters and unicode', () => { ... });
+```
+
+### TDD Example: TypeScript Feature
+
+**Example: Adding a markdown parser function**
+
+**Step 1: Write the test first (Red 🔴)**
+```ts
+// tests/unit/parser.test.ts
+import { describe, test, expect } from 'vitest';
+import { extractFrontmatter } from '../src/parser';
+
+describe('extractFrontmatter', () => {
+  test('should extract YAML frontmatter from markdown', () => {
+    const markdown = `---
+title: Test Note
+tags: [test, example]
+---
+# Content here`;
+
+    const result = extractFrontmatter(markdown);
+
+    expect(result).toEqual({
+      title: 'Test Note',
+      tags: ['test', 'example']
+    });
+  });
+
+  test('should return empty object when no frontmatter exists', () => {
+    const markdown = '# Just a heading';
+    const result = extractFrontmatter(markdown);
+    expect(result).toEqual({});
+  });
+});
+```
+
+**Step 2: Run test - it should fail (Red 🔴)**
+```bash
+npm run test:ts
+# Expected: FAIL - function doesn't exist yet
+```
+
+**Step 3: Write minimal implementation (Green 🟢)**
+```ts
+// src/parser.ts
+export function extractFrontmatter(markdown: string): Record<string, any> {
+  const frontmatterRegex = /^---\n([\s\S]*?)\n---/;
+  const match = markdown.match(frontmatterRegex);
+
+  if (!match) return {};
+
+  // Simple YAML parser (replace with proper library in production)
+  const yaml = match[1];
+  const result: Record<string, any> = {};
+
+  yaml.split('\n').forEach(line => {
+    const [key, value] = line.split(':').map(s => s.trim());
+    if (key && value) {
+      result[key] = value.startsWith('[') ? JSON.parse(value.replace(/'/g, '"')) : value;
+    }
+  });
+
+  return result;
+}
+```
+
+**Step 4: Run test - it should pass (Green 🟢)**
+```bash
+npm run test:ts
+# Expected: PASS - all tests green
+```
+
+**Step 5: Refactor if needed (Refactor 🔵)**
+```ts
+// Refactor to use a proper YAML library
+import yaml from 'yaml';
+
+export function extractFrontmatter(markdown: string): Record<string, any> {
+  const match = markdown.match(/^---\n([\s\S]*?)\n---/);
+  return match ? yaml.parse(match[1]) : {};
+}
+```
+
+### TDD Example: Rust/WASM Feature
+
+**Step 1: Write the test first (Red 🔴)**
+```rust
+// wasm/src/lib.rs
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_encode_markdown_to_bytes() {
+        let markdown = "# Hello World";
+        let encoded = encode_markdown(markdown);
+
+        assert!(!encoded.is_empty());
+        assert_eq!(encoded[0], b'#');
+    }
+
+    #[test]
+    fn test_decode_bytes_to_markdown() {
+        let bytes = vec![b'#', b' ', b'H', b'i'];
+        let decoded = decode_markdown(&bytes);
+
+        assert_eq!(decoded, "# Hi");
+    }
+}
+```
+
+**Step 2: Run test - it should fail (Red 🔴)**
+```bash
+cargo test
+# Expected: FAIL - functions don't exist
+```
+
+**Step 3: Implement (Green 🟢)**
+```rust
+pub fn encode_markdown(text: &str) -> Vec<u8> {
+    text.as_bytes().to_vec()
+}
+
+pub fn decode_markdown(bytes: &[u8]) -> String {
+    String::from_utf8_lossy(bytes).to_string()
+}
+```
+
+**Step 4: Run tests (Green 🟢)**
+```bash
+cargo test
+# Expected: PASS
+```
+
+### CI/CD Integration
+
+All tests run automatically in CI:
+- **On PR**: Tests must pass before merge
+- **On push to master**: Full test suite runs
+- **Coverage reports**: Track test coverage over time
+
+### Mocking Obsidian APIs
+
+When testing plugin code, mock Obsidian APIs:
+
+```ts
+import { vi } from 'vitest';
+
+// Mock Obsidian Vault API
+const mockVault = {
+  read: vi.fn().mockResolvedValue('# Mock content'),
+  modify: vi.fn().mockResolvedValue(undefined),
+  adapter: {
+    exists: vi.fn().mockResolvedValue(true)
+  }
+};
+
+// Use in tests
+test('should read file from vault', async () => {
+  const content = await mockVault.read('test.md');
+  expect(content).toBe('# Mock content');
+});
+```
+
+### Test Coverage Goals
+
+- **Minimum coverage**: 70% overall
+- **Critical paths**: 90%+ coverage
+- **WASM/Rust code**: 80%+ coverage
+- **Utility functions**: 95%+ coverage
+
+### TDD Benefits for This Project
+
+1. **Confidence**: Refactor safely knowing tests will catch regressions
+2. **Documentation**: Tests serve as living documentation of behavior
+3. **Design**: TDD encourages modular, testable code architecture
+4. **Debugging**: Failing tests pinpoint exact issue location
+5. **Obsidian API Changes**: Tests catch breaking changes in Obsidian updates
+
+### Resources
+
+- **Vitest Documentation**: https://vitest.dev/
+- **Rust Testing Guide**: https://doc.rust-lang.org/book/ch11-00-testing.html
+- **Testing Best Practices**: https://kentcdodds.com/blog/common-mistakes-with-react-testing-library
+
 ## Git & Security Practices
 
 **CRITICAL: This is a sensitive community plugin with high trust requirements.**
