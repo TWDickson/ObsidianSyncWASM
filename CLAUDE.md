@@ -221,11 +221,28 @@ gh project item-add 3 --owner TWDickson --url <issue-url>
 # Create draft issue in project
 gh project item-create 3 --owner TWDickson --title "Task title" --body "Description"
 
-# Update item status
-gh project item-edit --id <item-id> --owner TWDickson --field-id <status-field-id> --text "In Progress"
-
 # Archive completed item
 gh project item-archive <item-id> --owner TWDickson
+```
+
+**Update item status (move across board):**
+```bash
+# Get item details including item ID from issue
+gh project item-list 3 --owner TWDickson --format json | jq '.items[] | select(.content.number == 28)'
+
+# Update status field (use exact status names from project)
+# Status Field ID: PVTSSF_lAHOADRrKM4BHYazzg4Jy2s
+gh project item-edit --id <item-id> --project-id PVT_kwHOADRrKM4BHYaz --field-id PVTSSF_lAHOADRrKM4BHYazzg4Jy2s --single-select-option-id <option-id>
+
+# Status option IDs:
+# - Backlog: f75ad846
+# - Ready: 61e4505c
+# - In progress: 47fc9ee4
+# - In review: df73e18b
+# - Done: 98236657
+
+# Example: Move issue #28 to "In progress"
+gh project item-edit --id PVTI_... --project-id PVT_kwHOADRrKM4BHYaz --field-id PVTSSF_lAHOADRrKM4BHYazzg4Jy2s --single-select-option-id 47fc9ee4
 ```
 
 **Link PRs to project items:**
@@ -249,27 +266,44 @@ gh pr create --title "feat: new feature" --body "Fixes #23\n\nDescription..."
 **When Claude works on an existing issue:**
 
 1. **Check project status** to identify the issue and understand requirements
-2. **Create branch from issue** using `gh issue develop <issue-number>`
-3. **Create TodoWrite task list** breaking down the implementation steps
-4. **Update project item status** to "In progress" when starting work
-5. **Work through TodoWrite tasks** sequentially, committing progress
-6. **Create PR** with proper commit messages and "Closes #issue-number" reference
-7. **Project auto-updates** to "Done" when PR is merged
+2. **Get project item ID** from the issue number to enable status updates
+3. **Create branch from issue** using `gh issue develop <issue-number>`
+4. **Move item to "In progress"** on the board (REQUIRED - don't skip this!)
+5. **Create TodoWrite task list** breaking down the implementation steps
+6. **Work through TodoWrite tasks** sequentially, committing progress
+7. **Move item to "In review"** when creating PR
+8. **Create PR** with proper commit messages and "Closes #issue-number" reference
+9. **Move item to "Done"** after PR is merged (or let automation handle it)
 
 **Example workflow:**
 ```bash
 # User: "Work on issue #23: Implement Yrs in WASM App"
 
 # Claude automatically:
-# 1. Retrieves issue #23 from project
-# 2. Creates branch: gh issue develop 23 --checkout
-# 3. Creates TodoWrite tasks for implementation steps
-# 4. Updates project status: Backlog → In progress
+# 1. Retrieves issue #23 from project and gets item ID
+gh project item-list 3 --owner TWDickson --format json | jq '.items[] | select(.content.number == 23)'
+
+# 2. Creates branch from issue
+gh issue develop 23 --checkout
+
+# 3. MOVES ITEM TO "IN PROGRESS" (critical step!)
+gh project item-edit --id PVTI_... --project-id PVT_kwHOADRrKM4BHYaz \
+  --field-id PVTSSF_lAHOADRrKM4BHYazzg4Jy2s --single-select-option-id 47fc9ee4
+
+# 4. Creates TodoWrite tasks for implementation steps
 # 5. Implements feature step-by-step with signed commits
-# 6. Creates PR: "feat(WASM): ✨ implement Yrs for markdown files"
-#    - PR body includes: "Closes #23"
-#    - PR automatically added to project and linked to issue
-# 7. After merge, GitHub auto-updates: In progress → Done
+
+# 6. MOVES ITEM TO "IN REVIEW"
+gh project item-edit --id PVTI_... --project-id PVT_kwHOADRrKM4BHYaz \
+  --field-id PVTSSF_lAHOADRrKM4BHYazzg4Jy2s --single-select-option-id df73e18b
+
+# 7. Creates PR with proper linking
+gh pr create --title "feat(WASM): ✨ implement Yrs for markdown files" \
+  --body "Closes #23\n\nImplementation details..."
+
+# 8. After PR merge, either manually move to "Done" or let GitHub automation handle it
+gh project item-edit --id PVTI_... --project-id PVT_kwHOADRrKM4BHYaz \
+  --field-id PVTSSF_lAHOADRrKM4BHYazzg4Jy2s --single-select-option-id 98236657
 ```
 
 **Branch Creation Commands:**
@@ -306,8 +340,13 @@ gh project field-list 3 --owner TWDickson --format json
 ### Best Practices
 
 **When working with the project:**
-- Always verify project status before starting new work to avoid conflicts
-- Update status in real-time as work progresses (don't batch updates)
+- **Always move items across the board** - Don't just work on items in "Backlog", actively move them through the workflow
+- **Get the project item ID first** - Before starting work, retrieve the item ID so you can update status
+- **Update status at each stage:**
+  - `Backlog` → `In progress` when starting work (REQUIRED!)
+  - `In progress` → `In review` when creating PR
+  - `In review` → `Done` after merge (or let automation handle it)
+- Verify project status before starting new work to avoid conflicts
 - Link all PRs to their corresponding issues using "Fixes #issue" in the PR body
 - Add meaningful comments to issues when encountering blockers or changing approach
 - Archive items only when fully complete and merged
