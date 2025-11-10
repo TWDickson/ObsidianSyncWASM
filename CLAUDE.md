@@ -59,6 +59,7 @@ perf(TypeScript): ⚡ upgrade to ES2021 target
 
 **Available Scopes:**
 - `LLM Integration` - Claude Code, AI-related changes
+- `Project` - GitHub Project, task management
 - `Utility` - Helper scripts, tools
 - `Config` - Configuration files
 - `WASM` - Rust/WebAssembly code
@@ -157,6 +158,169 @@ The repository includes a CI workflow (`.github/workflows/ci.yml`) that runs on:
    - All commits must be signed (enforced by branch protection)
 
 **Note**: Branch protection requires a GitHub Pro account for private repositories, but is free for public repositories.
+
+## GitHub Project Management
+
+This repository uses **GitHub Projects** for task tracking and project planning.
+
+**Project Details:**
+- **Name**: ObsidianSyncWASM Kanban
+- **URL**: https://github.com/users/TWDickson/projects/3
+- **Description**: Kanban board to guide initial development
+- **Type**: Public project with custom fields (Status, Priority, Dates)
+
+### Authentication Setup
+
+To enable GitHub Project integration, ensure the GitHub CLI has the required permissions:
+
+```bash
+# Grant read and write access to projects
+gh auth refresh -s read:project -s write:project
+
+# Verify authentication
+gh project view 3 --owner TWDickson
+```
+
+### Claude Code Integration
+
+Claude Code automatically integrates with the GitHub Project when working on tasks:
+
+**Automatic Synchronization:**
+
+1. **Task Discovery** - Before starting work, Claude retrieves current project items to understand priorities and backlog
+2. **Status Updates** - As work progresses, Claude updates project item status:
+   - `Backlog` → `In progress` when starting a task
+   - `In progress` → `Done` when completing a task
+3. **Issue Linking** - When creating PRs, Claude automatically links them to related project items
+4. **Progress Reporting** - Claude provides project status updates before and after completing work
+
+**TodoWrite ↔ GitHub Project Sync:**
+- Claude's internal TodoWrite task list stays synchronized with GitHub Project items
+- Complex tasks are broken down into subtasks in TodoWrite, while the parent issue tracks overall progress in the project
+- Project items provide the "what" (feature/issue), while TodoWrite tracks the "how" (implementation steps)
+
+### Common Project Commands
+
+**View project status:**
+```bash
+# View project overview
+gh project view 3 --owner TWDickson
+
+# List all items with details
+gh project item-list 3 --owner TWDickson --format json --limit 100
+
+# View specific item
+gh project item-view <item-id> --owner TWDickson
+```
+
+**Create and manage items:**
+```bash
+# Add existing issue to project
+gh project item-add 3 --owner TWDickson --url <issue-url>
+
+# Create draft issue in project
+gh project item-create 3 --owner TWDickson --title "Task title" --body "Description"
+
+# Update item status
+gh project item-edit --id <item-id> --owner TWDickson --field-id <status-field-id> --text "In Progress"
+
+# Archive completed item
+gh project item-archive <item-id> --owner TWDickson
+```
+
+**Link PRs to project items:**
+```bash
+# PRs are automatically added to the project when they reference an issue in the project
+# Use "Fixes #issue-number" or "Closes #issue-number" in PR body
+gh pr create --title "feat: new feature" --body "Fixes #23\n\nDescription..."
+```
+
+### Project Workflow
+
+**Standard Development Flow:**
+
+1. **Create issue in Kanban** - Add new task to the project board with proper details
+2. **Create branch from issue** - Use GitHub's "Create a branch" feature from the issue
+3. **Checkout branch locally** - Switch to the new branch
+4. **Implement changes** - Make code changes with signed commits
+5. **Create PR** - Link back to the issue with "Closes #issue-number"
+6. **Merge and cleanup** - PR auto-closes issue and updates project status
+
+**When Claude works on an existing issue:**
+
+1. **Check project status** to identify the issue and understand requirements
+2. **Create branch from issue** using `gh issue develop <issue-number>`
+3. **Create TodoWrite task list** breaking down the implementation steps
+4. **Update project item status** to "In progress" when starting work
+5. **Work through TodoWrite tasks** sequentially, committing progress
+6. **Create PR** with proper commit messages and "Closes #issue-number" reference
+7. **Project auto-updates** to "Done" when PR is merged
+
+**Example workflow:**
+```bash
+# User: "Work on issue #23: Implement Yrs in WASM App"
+
+# Claude automatically:
+# 1. Retrieves issue #23 from project
+# 2. Creates branch: gh issue develop 23 --checkout
+# 3. Creates TodoWrite tasks for implementation steps
+# 4. Updates project status: Backlog → In progress
+# 5. Implements feature step-by-step with signed commits
+# 6. Creates PR: "feat(WASM): ✨ implement Yrs for markdown files"
+#    - PR body includes: "Closes #23"
+#    - PR automatically added to project and linked to issue
+# 7. After merge, GitHub auto-updates: In progress → Done
+```
+
+**Branch Creation Commands:**
+```bash
+# Create branch directly from issue (recommended)
+gh issue develop <issue-number> --checkout --name feature/short-name
+
+# Or manually create branch with issue reference
+git checkout -b <issue-number>-feature-name
+
+# Link issue to branch in project (if not auto-linked)
+gh issue develop <issue-number> --checkout
+```
+
+### Project Field IDs
+
+For programmatic updates, these are the custom field IDs in the project:
+
+- **Status** (ID: `PVTSSF_lAHOADRrKM4BHYazzg4Jy2s`): Item workflow state
+  - Options: `Backlog`, `Ready`, `In progress`, `In review`, `Done`
+- **Priority** (ID: `PVTSSF_lAHOADRrKM4BHYazzg4Jy6U`): Task prioritization
+  - Options: `P0` (Critical), `P1` (High), `P2` (Normal)
+- **Size** (ID: `PVTSSF_lAHOADRrKM4BHYazzg4Jy6Y`): Effort estimation
+  - Options: `XS`, `S`, `M`, `L`, `XL`
+- **Start date** (ID: `PVTF_lAHOADRrKM4BHYazzg4Jy6g`): When work begins
+- **Target date** (ID: `PVTF_lAHOADRrKM4BHYazzg4Jy6k`): Expected completion date
+
+Query field IDs:
+
+```bash
+gh project field-list 3 --owner TWDickson --format json
+```
+
+### Best Practices
+
+**When working with the project:**
+- Always verify project status before starting new work to avoid conflicts
+- Update status in real-time as work progresses (don't batch updates)
+- Link all PRs to their corresponding issues using "Fixes #issue" in the PR body
+- Add meaningful comments to issues when encountering blockers or changing approach
+- Archive items only when fully complete and merged
+
+**Task breakdown:**
+- Large project items (e.g., "Implement Yrs in WASM App") should be broken into TodoWrite subtasks
+- TodoWrite tracks granular steps like "Write Rust FFI bindings", "Add TypeScript wrappers", "Write tests"
+- Project item tracks overall feature completion
+
+**Communication:**
+- Project board provides high-level visibility for stakeholders
+- TodoWrite provides detailed, real-time progress for active development
+- Commit messages and PR descriptions connect code changes to project goals
 
 ## Code Organization
 
