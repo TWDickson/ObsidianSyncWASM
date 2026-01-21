@@ -1,4 +1,5 @@
 use wasm_bindgen::prelude::*;
+use yrs::Doc;
 
 // This is called when the wasm module is instantiated
 // Skip during tests to avoid entry point conflicts with test harness
@@ -28,6 +29,22 @@ pub fn compute_hash(input: &str) -> u64 {
         hash = hash.wrapping_mul(31).wrapping_add(byte as u64);
     }
     hash
+}
+
+/// Verify that Yrs CRDT library compiles and can be instantiated in WASM
+/// 
+/// This function creates a basic Yrs document to confirm the dependency works.
+/// Yrs is a Rust port of Yjs, providing Conflict-free Replicated Data Types (CRDTs)
+/// for building collaborative applications.
+/// 
+/// # Returns
+/// A success message if Yrs can be initialized
+#[wasm_bindgen]
+pub fn verify_yrs() -> String {
+    // Create a new Yrs document - this proves the library is compiled correctly
+    let _doc = Doc::new();
+    
+    "Yrs CRDT library loaded successfully!".to_string()
 }
 
 #[cfg(test)]
@@ -63,6 +80,21 @@ mod tests {
         let result = greet("");
         assert!(result.contains("Hello"));
     }
+
+    #[test]
+    fn test_verify_yrs() {
+        let result = verify_yrs();
+        assert!(result.contains("Yrs"));
+        assert!(result.contains("successfully"));
+    }
+
+    #[test]
+    fn test_verify_yrs_creates_doc() {
+        // Verify that calling verify_yrs doesn't panic
+        // and that Yrs Doc can be created
+        let result = verify_yrs();
+        assert!(!result.is_empty());
+    }
 }
 
 // WASM-specific tests that run in the browser
@@ -82,5 +114,11 @@ mod wasm_tests {
     fn test_compute_hash_wasm() {
         let hash = compute_hash("wasm test");
         assert!(hash > 0);
+    }
+
+    #[wasm_bindgen_test]
+    fn test_verify_yrs_wasm() {
+        let result = verify_yrs();
+        assert!(result.contains("successfully"));
     }
 }

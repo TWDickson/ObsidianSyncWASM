@@ -1,5 +1,5 @@
 import { App, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
-import init, { greet, compute_hash } from './wasm/pkg/obsidian_sync_wasm.js';
+import init, { greet, compute_hash, verify_yrs } from './wasm/pkg/obsidian_sync_wasm.js';
 
 interface ObsidianSyncWASMSettings {
 	testSetting: string;
@@ -39,6 +39,10 @@ export default class ObsidianSyncWASMPlugin extends Plugin {
 			await init({ module_or_path: wasmBytes });
 			this.wasmInitialized = true;
 			console.log('WASM module initialized successfully from:', wasmPath);
+
+			// Verify Yrs is loaded
+			const yrsStatus = verify_yrs();
+			console.log('Yrs verification:', yrsStatus);
 		} catch (error) {
 			console.error('Failed to initialize WASM module:', error);
 			new Notice('Failed to initialize Obsidian Sync WASM plugin');
@@ -72,6 +76,21 @@ export default class ObsidianSyncWASMPlugin extends Plugin {
 				const hash = compute_hash(testString);
 				new Notice(`Hash: ${hash}`);
 				console.log(`Hash of "${testString}": ${hash}`);
+			}
+		});
+
+		// Test command to verify Yrs CRDT library
+		this.addCommand({
+			id: 'test-wasm-yrs',
+			name: 'Test WASM: Verify Yrs',
+			callback: () => {
+				if (!this.wasmInitialized) {
+					new Notice('WASM module not initialized');
+					return;
+				}
+				const status = verify_yrs();
+				new Notice(status);
+				console.log('Yrs verification:', status);
 			}
 		});
 
