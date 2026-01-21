@@ -3,20 +3,23 @@
 /**
  * Symlink Plugin to Test Vault
  * Creates symlinks for development with Hot Reload plugin
+ * Now with Windows junction support (no admin required!)
  */
 
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { execSync } from 'child_process';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const projectRoot = path.join(__dirname, '..');
 
 const PLUGIN_ID = 'obsidian-sync-wasm';
+const IS_WINDOWS = process.platform === 'win32';
 
-// Get vault path from command line or use default
-const vaultPath = process.argv[2];
+// Get vault path from command line or environment variable
+const vaultPath = process.argv[2] || process.env.OBSIDIAN_TEST_VAULT;
 
 if (!vaultPath) {
 	console.error('❌ Please provide the vault path as an argument');
@@ -27,10 +30,12 @@ if (!vaultPath) {
 	process.exit(1);
 }
 
-const expandedVaultPath = vaultPath.replace(/^~/, process.env.HOME);
+const expandedVaultPath = vaultPath.replace(/^~/, process.env.HOME || process.env.USERPROFILE);
 const fullVaultPath = path.resolve(expandedVaultPath);
 
-console.log('🔗 Setting up symlink for Hot Reload development...\n');
+const linkType = IS_WINDOWS ? 'junction' : 'symlink';
+console.log(`🔗 Setting up ${linkType} for Hot Reload development...`);
+console.log(`   Platform: ${process.platform}\n`);
 
 // Verify vault exists
 if (!fs.existsSync(fullVaultPath)) {
@@ -58,30 +63,62 @@ const targetPluginDir = path.join(pluginsDir, PLUGIN_ID);
 if (fs.existsSync(targetPluginDir)) {
 	const stats = fs.lstatSync(targetPluginDir);
 	if (stats.isSymbolicLink()) {
-		console.log('⚠️  Removing existing symlink...');
-		fs.unlinkSync(targetPluginDir);
+		console.log('⚠️  Removing existing symlink/junction...');
+		if (IS_WINDOWS) {
+			// On Windows, use rmdir for junctions
+			try {
+				execSync(`rmdir "${targetPluginDir}"`, { stdio: 'ignore' });
+			} catch (err) {
+				fs.unlinkSync(targetPluginDir);
+			}
+		} else {
+			fs.unlinkSync(targetPluginDir);
+		}
 	} else if (stats.isDirectory()) {
 		console.log('⚠️  Removing existing directory...');
 		fs.rmSync(targetPluginDir, { recursive: true, force: true });
 	}
 }
 
-// Create symlink to project root
+// Create symlink or junction
 try {
-	fs.symlinkSync(projectRoot, targetPluginDir, 'dir');
-	console.log('✅ Symlink created successfully!\n');
+	if (IS_WINDOWS) {
+		// Try junction first (works without admin)
+		console.log('   Attempting Windows junction (no admin needed)...');
+		try {
+			execSync(`mklink /J "${targetPluginDir}" "${projectRoot}"`, { stdio: 'inherit' });
+			console.log('✅ Junction created successfully!\n');
+		} catch (junctionErr) {
+			// Fallback to symlink (requires admin)
+			console.log('   Junction failed, trying symlink (requires admin)...');
+			fs.symlinkSync(projectRoot, targetPluginDir, 'junction');
+			console.log('✅ Symlink created successfully!\n');
+		}
+	} else {
+		// Mac/Linux use regular symlink
+		fs.symlinkSync(projectRoot, targetPluginDir, 'dir');
+		console.log('✅ Symlink created successfully!\n');
+	}
 	console.log(`   Source: ${projectRoot}`);
 	console.log(`   Target: ${targetPluginDir}\n`);
 } catch (err) {
-	console.error('❌ Failed to create symlink:', err.message);
-	console.error('\nTip: You may need to run with elevated permissions on Windows');
+	console.error('❌ Failed to create link:', err.message);
+	if (IS_WINDOWS) {
+		console.error('\nWindows Troubleshooting:');
+		console.error('1. Try running PowerShell as Administrator');
+		console.error('2. Or use copy mode: npm run copy:plugin');
+		console.error('3. Junction should work without admin - check path permissions');
+	} else {
+		console.error('\nTip: You may need elevated permissions');
+	}
 	process.exit(1);
 }
 
 // Verify required files exist
 const requiredFiles = [
 	'manifest.json',
-	'main.js'
+	'main.js',
+	'obsidian_sync_wasm_bg.wasm'
 ];
 
 console.log('📋 Checking required files...');

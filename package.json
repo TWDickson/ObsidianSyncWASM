@@ -8,6 +8,7 @@
 		"dev:wasm": "nodemon --config ./nodemon-configs/nodemon-dev-wasm.json",
 		"dev:ts": "nodemon --config ./nodemon-configs/nodemon-dev-ts.json",
 		"dev": "npm run wasm && concurrently -n wasm,ts -c cyan,green \"npm run dev:wasm\" \"npm run dev:ts\"",
+		"dev:copy": "npm run build && npm run copy:plugin && nodemon --watch main.js --watch obsidian_sync_wasm_bg.wasm --exec \"npm run copy:plugin\"",
 		"build": "npm run wasm && tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
 		"test": "vitest run",
 		"test:watch": "vitest",
@@ -15,10 +16,11 @@
 		"test:coverage": "vitest run --coverage",
 		"test:rust": "cd ./wasm && cargo test",
 		"test:all": "npm run test && npm run test:rust",
-		"setup:test-vaults": "bash scripts/setup-test-vaults.sh",
+		"setup:test-vaults": "node scripts/setup-test-vaults.mjs",
 		"install:test-vaults": "node scripts/install-to-test-vaults.mjs",
 		"build:install": "npm run build && npm run install:test-vaults",
 		"symlink:plugin": "node scripts/symlink-plugin.mjs",
+		"copy:plugin": "node scripts/copy-plugin.mjs",
 		"version": "node version-bump.mjs && git add manifest.json versions.json"
 	},
 	"keywords": [
