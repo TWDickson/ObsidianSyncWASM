@@ -121,10 +121,6 @@ fs.writeFileSync(path.join(testVaultsDir, 'README.md'), readme);
 
 console.log('✓ Created test vaults README');
 
-// Create .gitkeep files to preserve structure
-fs.writeFileSync(path.join(vaultA, '.gitkeep'), '');
-fs.writeFileSync(path.join(vaultB, '.gitkeep'), '');
-
 console.log('');
 console.log('✅ Test vault structure created!');
 console.log('');
