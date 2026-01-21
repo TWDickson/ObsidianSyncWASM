@@ -8,4 +8,4 @@ This is a sample note for testing sync functionality.
 - Metadata handling
 - Hash computation
 
-Created: {{date}}
+Created: 2026-01-21

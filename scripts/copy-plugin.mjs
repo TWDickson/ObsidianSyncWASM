@@ -113,9 +113,14 @@ console.log(`   Source: ${projectRoot}`);
 console.log(`   Target: ${targetPluginDir}\n`);
 
 // Save vault path for future use
+// Note: .vault-path is excluded in .gitignore to avoid committing sensitive paths
 const configPath = path.join(projectRoot, '.vault-path');
-fs.writeFileSync(configPath, fullVaultPath);
-console.log(`💾 Vault path saved to .vault-path`);
+try {
+	fs.writeFileSync(configPath, fullVaultPath, { mode: 0o600 }); // Restrict to owner only
+	console.log(`💾 Vault path saved to .vault-path`);
+} catch (err) {
+	console.warn(`⚠️  Could not save vault path: ${err.message}`);
+}
 
 console.log('\n✅ Copy complete!\n');
 console.log('Next steps:');

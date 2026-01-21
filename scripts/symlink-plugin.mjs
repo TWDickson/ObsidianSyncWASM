@@ -9,7 +9,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { execSync } from 'child_process';
+import { spawnSync } from 'child_process';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -65,9 +65,12 @@ if (fs.existsSync(targetPluginDir)) {
 	if (stats.isSymbolicLink()) {
 		console.log('⚠️  Removing existing symlink/junction...');
 		if (IS_WINDOWS) {
-			// On Windows, use rmdir for junctions
+			// On Windows, use rmdir for junctions - safer than spawnSync
 			try {
-				execSync(`rmdir "${targetPluginDir}"`, { stdio: 'ignore' });
+				const result = spawnSync('cmd', ['/c', 'rmdir', targetPluginDir], { stdio: 'ignore' });
+				if (result.status !== 0) {
+					fs.unlinkSync(targetPluginDir);
+				}
 			} catch (err) {
 				fs.unlinkSync(targetPluginDir);
 			}
@@ -86,7 +89,13 @@ try {
 		// Try junction first (works without admin)
 		console.log('   Attempting Windows junction (no admin needed)...');
 		try {
-			execSync(`mklink /J "${targetPluginDir}" "${projectRoot}"`, { stdio: 'inherit' });
+			// Use spawnSync with array arguments to avoid command injection
+			const result = spawnSync('cmd', ['/c', 'mklink', '/J', targetPluginDir, projectRoot], {
+				stdio: 'inherit'
+			});
+			if (result.status !== 0) {
+				throw new Error('Junction creation failed');
+			}
 			console.log('✅ Junction created successfully!\n');
 		} catch (junctionErr) {
 			// Fallback to symlink (requires admin)
@@ -137,9 +146,14 @@ if (missingFiles.length > 0) {
 }
 
 // Save vault path for future use
+// Note: .vault-path is excluded in .gitignore to avoid committing sensitive paths
 const configPath = path.join(projectRoot, '.vault-path');
-fs.writeFileSync(configPath, fullVaultPath);
-console.log(`\n💾 Vault path saved to .vault-path`);
+try {
+	fs.writeFileSync(configPath, fullVaultPath, { mode: 0o600 }); // Restrict to owner only
+	console.log(`\n💾 Vault path saved to .vault-path`);
+} catch (err) {
+	console.warn(`\n⚠️  Could not save vault path: ${err.message}`);
+}
 
 console.log('\n✅ Setup complete!\n');
 console.log('Next steps:');

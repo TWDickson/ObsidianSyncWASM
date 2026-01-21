@@ -36,6 +36,7 @@ pub fn compute_hash(input: &str) -> u64 {
 #[wasm_bindgen]
 pub fn verify_yrs() -> String {
     // Create a new Yrs document to verify the library works
+    // The document is immediately dropped, which is fine for verification purposes
     let _doc = Doc::new();
     "Yrs CRDT library loaded successfully!".to_string()
 }
