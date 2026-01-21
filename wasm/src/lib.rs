@@ -39,6 +39,10 @@ pub fn compute_hash(input: &str) -> u64 {
 /// 
 /// # Returns
 /// A success message if Yrs can be initialized
+/// 
+/// # Panics
+/// This function will panic if Yrs fails to initialize, though this is extremely
+/// unlikely under normal circumstances as Doc::new() has no failure cases.
 #[wasm_bindgen]
 pub fn verify_yrs() -> String {
     // Create a new Yrs document - this proves the library is compiled correctly
