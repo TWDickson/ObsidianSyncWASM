@@ -4,6 +4,9 @@
  * Setup Test Vaults for Integration Testing
  * Cross-platform Node.js implementation (replaces bash script)
  * Works on Windows, Mac, and Linux
+ * 
+ * IMPORTANT: Does not overwrite existing directories or files!
+ * vault-a already exists in git with .obsidian configuration
  */
 
 import fs from 'fs';
@@ -16,120 +19,63 @@ const projectRoot = path.join(__dirname, '..');
 
 console.log('🧪 Setting up test vaults for integration testing...\n');
 
-// Create base directory structure
+// Define directory structure
 const testVaultsDir = path.join(projectRoot, 'test-vaults');
 const vaultA = path.join(testVaultsDir, 'vault-a');
 const vaultB = path.join(testVaultsDir, 'vault-b');
 const fixtures = path.join(testVaultsDir, 'fixtures');
 
-fs.mkdirSync(vaultA, { recursive: true });
-fs.mkdirSync(vaultB, { recursive: true });
-fs.mkdirSync(fixtures, { recursive: true });
+// Create directories only if they don't exist
+[vaultA, vaultB, fixtures].forEach(dir => {
+    if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+        console.log(`✓ Created directory: ${path.basename(dir)}`);
+    } else {
+        console.log(`→ Directory already exists: ${path.basename(dir)}`);
+    }
+});
 
-console.log('✓ Created test vault directories');
+// Create .gitkeep for vault-b to preserve empty directory in git
+// vault-a already has .obsidian config files tracked in git
+const vaultBGitkeep = path.join(vaultB, '.gitkeep');
+if (!fs.existsSync(vaultBGitkeep)) {
+    fs.writeFileSync(vaultBGitkeep, '', 'utf8');
+    console.log('✓ Created .gitkeep in vault-b');
+}
 
 // Get current timestamp for fixture files
 const currentDate = new Date().toISOString().split('T')[0];
 
-// Create sample fixture files
-const sampleNote = `# Sample Test Note
+// Define fixture file templates
+const fixtureTemplates = {
+    'sample-note.md': `# Sample Test Note\n\nThis is a sample note for testing sync functionality.\n\n## Features to Test\n- File synchronization\n- Conflict resolution\n- Metadata handling\n- Hash computation\n\nCreated: ${currentDate}\n`,
+    'note-with-links.md': `# Note with Internal Links\n\nThis note contains [[sample-note]] as an internal link.\n\nIt also references [[another-note]] which may not exist yet.\n`,
+    'conflict-scenario.md': `# Conflict Test File\n\nThis file is designed to create conflicts during sync testing.\n\nVersion: ORIGINAL\nLast modified: ${currentDate}\n`
+};
 
-This is a sample note for testing sync functionality.
+// Create fixture files only if they don't exist
+console.log('\n📄 Setting up fixture files...');
+Object.entries(fixtureTemplates).forEach(([filename, content]) => {
+    const filePath = path.join(fixtures, filename);
+    if (!fs.existsSync(filePath)) {
+        fs.writeFileSync(filePath, content, 'utf8');
+        console.log(`✓ Created: ${filename}`);
+    } else {
+        console.log(`→ Already exists: ${filename}`);
+    }
+});
 
-## Features to Test
-- File synchronization
-- Conflict resolution
-- Metadata handling
-- Hash computation
+// Create or update README
+const readmePath = path.join(testVaultsDir, 'README.md');
+const readme = `# Test Vaults\n\nThis directory contains Obsidian vaults used for integration testing.\n\n## Structure\n\n- \\`vault-a/\\` - Primary test vault (tracked in git with .obsidian config)\n- \\`vault-b/\\` - Secondary test vault (for sync testing)\n- \\`fixtures/\\` - Sample test files and scenarios\n\n## Setup Instructions\n\n1. **Open vaults in Obsidian**\n   - Open Obsidian\n   - File → Open Folder as Vault\n   - Select \\`test-vaults/vault-a\\`\n   - Repeat for \\`vault-b\\`\n\n2. **Disable Safe Mode**\n   - Settings → Community Plugins\n   - Turn off "Safe Mode"\n   - This allows development plugins to load\n\n3. **Install plugin**\n   - Run: \\`npm run install:test-vaults\\`\n   - This copies the built plugin to both vaults\n\n4. **Enable plugin**\n   - Settings → Community Plugins\n   - Find "Obsidian Sync WASM"\n   - Enable it\n\n## Important Notes\n\n⚠️ **Do not use these vaults for real notes!**\nThey are for testing only and may be wiped/reset frequently.\n\n⚠️ **Git tracking**\n- \\`vault-a/\\` is tracked in git (includes .obsidian configuration)\n- \\`vault-b/\\` only has .gitkeep (actual vault not tracked)\n- \\`fixtures/\\` contains template files (tracked in git)\n\n## Testing Workflow\n\n1. Make changes to plugin code\n2. Run \\`npm run build\\`\n3. Run \\`npm run install:test-vaults\\`\n4. Reload Obsidian plugin (Cmd+R on Mac, Ctrl+R on Windows)\n5. Test functionality\n6. Verify results\n`;\n\nfs.writeFileSync(readmePath, readme, 'utf8');
+console.log('\n✓ Created/updated test vaults README');
 
-Created: ${currentDate}
-`;
-
-const noteWithLinks = `# Note with Internal Links
-
-This note contains [[sample-note]] as an internal link.
-
-It also references [[another-note]] which may not exist yet.
-`;
-
-const conflictScenario = `# Conflict Test File
-
-This file is designed to create conflicts during sync testing.
-
-Version: ORIGINAL
-Last modified: ${currentDate}
-`;
-
-fs.writeFileSync(path.join(fixtures, 'sample-note.md'), sampleNote);
-fs.writeFileSync(path.join(fixtures, 'note-with-links.md'), noteWithLinks);
-fs.writeFileSync(path.join(fixtures, 'conflict-scenario.md'), conflictScenario);
-
-console.log('✓ Created fixture files');
-
-// Create README for test vaults
-const readme = `# Test Vaults
-
-This directory contains Obsidian vaults used for integration testing.
-
-## Structure
-
-- \`vault-a/\` - Primary test vault
-- \`vault-b/\` - Secondary test vault (for sync testing)
-- \`fixtures/\` - Sample test files and scenarios
-
-## Setup Instructions
-
-1. **Open vaults in Obsidian**
-   - Open Obsidian
-   - File → Open Folder as Vault
-   - Select \`test-vaults/vault-a\`
-   - Repeat for \`vault-b\`
-
-2. **Disable Safe Mode**
-   - Settings → Community Plugins
-   - Turn off "Safe Mode"
-   - This allows development plugins to load
-
-3. **Install plugin**
-   - Run: \`npm run install:test-vaults\`
-   - This copies the built plugin to both vaults
-
-4. **Enable plugin**
-   - Settings → Community Plugins
-   - Find "Obsidian Sync WASM"
-   - Enable it
-
-## Important Notes
-
-⚠️ **Do not use these vaults for real notes!**
-They are for testing only and may be wiped/reset frequently.
-
-⚠️ **Git ignore**
-These vaults are excluded from git (see \`.gitignore\`)
-
-## Testing Workflow
-
-1. Make changes to plugin code
-2. Run \`npm run build\`
-3. Run \`npm run install:test-vaults\`
-4. Reload Obsidian plugin (Cmd+R on Mac, Ctrl+R on Windows)
-5. Test functionality
-6. Verify results
-`;
-
-fs.writeFileSync(path.join(testVaultsDir, 'README.md'), readme);
-
-console.log('✓ Created test vaults README');
-
-console.log('');
-console.log('✅ Test vault structure created!');
-console.log('');
-console.log('Next steps:');
+console.log('\n✅ Test vault structure ready!');
+console.log('\nNext steps:');
 console.log('1. Open Obsidian and create vaults at:');
-console.log('   - test-vaults/vault-a');
+console.log('   - test-vaults/vault-a (already configured in git)');
 console.log('   - test-vaults/vault-b');
 console.log('2. Disable Safe Mode in each vault');
 console.log('3. Run: npm run install:test-vaults');
 console.log('4. Enable the plugin in each vault');
-console.log('');
-console.log('See test-vaults/README.md for detailed instructions');
+console.log('\nSee test-vaults/README.md for detailed instructions\n');
