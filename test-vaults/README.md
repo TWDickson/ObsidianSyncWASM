@@ -46,4 +46,3 @@ These vaults are excluded from git (see `.gitignore`)
 4. Reload Obsidian plugin (Cmd+R on Mac, Ctrl+R on Windows)
 5. Test functionality
 6. Verify results
-

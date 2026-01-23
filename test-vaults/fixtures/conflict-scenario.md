@@ -3,4 +3,4 @@
 This file is designed to create conflicts during sync testing.
 
 Version: ORIGINAL
-Last modified: {{date}}
+Last modified: 2026-01-21

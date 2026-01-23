@@ -1,4 +1,5 @@
 use wasm_bindgen::prelude::*;
+use yrs::Doc;
 
 // This is called when the wasm module is instantiated
 // Skip during tests to avoid entry point conflicts with test harness
@@ -28,6 +29,16 @@ pub fn compute_hash(input: &str) -> u64 {
         hash = hash.wrapping_mul(31).wrapping_add(byte as u64);
     }
     hash
+}
+
+/// Verify that the Yrs CRDT library is loaded and working
+/// This creates a Yrs document to confirm the dependency is available
+#[wasm_bindgen]
+pub fn verify_yrs() -> String {
+    // Create a new Yrs document to verify the library works
+    // The document is immediately dropped, which is fine for verification purposes
+    let _doc = Doc::new();
+    "Yrs CRDT library loaded successfully!".to_string()
 }
 
 #[cfg(test)]
@@ -63,6 +74,19 @@ mod tests {
         let result = greet("");
         assert!(result.contains("Hello"));
     }
+
+    #[test]
+    fn test_verify_yrs() {
+        let result = verify_yrs();
+        assert_eq!(result, "Yrs CRDT library loaded successfully!");
+    }
+
+    #[test]
+    fn test_verify_yrs_creates_doc() {
+        // This test verifies that creating a Yrs document doesn't panic
+        let result = verify_yrs();
+        assert!(!result.is_empty());
+    }
 }
 
 // WASM-specific tests that run in the browser
@@ -82,5 +106,11 @@ mod wasm_tests {
     fn test_compute_hash_wasm() {
         let hash = compute_hash("wasm test");
         assert!(hash > 0);
+    }
+
+    #[wasm_bindgen_test]
+    fn test_verify_yrs_wasm() {
+        let result = verify_yrs();
+        assert_eq!(result, "Yrs CRDT library loaded successfully!");
     }
 }
